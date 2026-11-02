@@ -191,7 +191,7 @@ and executed evidence — lives in [`docs/`](docs/) rather than here:
 | C04 | none — the course had no C04 assignment (C03 took its place; the slot was the CP1 checkpoint, `docs/course/C02.md` "Vztah k CP1") | — | — |
 | C05 | `docs/architecture-and-decisions.md` § "C05 Detailed Design" (unit: `backend/src/reservations/lifecycle.py`) | `backend/tests/test_lifecycle.py` (DD-T1…T9); § "C05 DD Verification Evidence" | `c05-detailed-design` |
 | C06 | assessment of our `v4.1.0` by team HAH; owner disposition in `docs/evidence-and-evolution.md` § "C06 Internal Evidence Assessment" | F1/F2 reproduced on `v4.1.0`, closed by VE-05.3 (both court kinds), DD-T4, and the season-proof BR-04 test | assessed `v4.1.0`, fixed `v4.1.1` |
-| C07–C08 | `docs/evidence-and-evolution.md` § "Risk Assessment" (part B); status report and design review are presented from tag `v4.1.1` | see the C06 row | `v4.1.1` |
+| C07–C08 | `docs/evidence-and-evolution.md` § "Risk Assessment" (part B); status report and design review are presented from tag `v4.1.2` | CI `.github/workflows/ci.yml`; see the C06 row | `v4.1.2` |
 
 The latest release tag (see `CHANGELOG.md`) marks one baseline of docs,
 code and tests together. Status of each exercise: `docs/project-state.md`.
