@@ -16,7 +16,7 @@ update this file, the next session will start from a wrong premise.
 ## Current phase
 
 **C01–C06: all DONE. C07–C08: in progress** (assignment `docs/course/C07-C08.md`;
-CP1 defence at the next exercise). **C01: DONE.** **C02: DONE**: the team
+CP1 defence (A + C) on the exercise right after C07, not a week later). **C01: DONE.** **C02: DONE**: the team
 approved specification baselines v0.1, v0.2 and v0.3 on 2026-10-12, which
 was the last open gate. **C03: DONE**: Part A
 (AS-IS trace) and B–M (drivers → ADR-005 → TO-BE views → outbox implementation
@@ -96,7 +96,7 @@ v0.2") now holds formally, not just behaviourally.
 
 - **C07–C08 / CP1:** the defence itself (A + C) at the next exercise, and the
   risk treatment that is still NOT VERIFIED (`docs/evidence-and-evolution.md`
-  § "Risk Assessment", R-01: each member's clean run + dry run, due 2026-11-09). They are open until a team member
+  § "Risk Assessment", R-01: each member's clean run + dry run, due 2026-11-16, i.e. after the defence). They are open until a team member
   does them. A session must not mark them done.
 - The specification-baseline approval gate was closed on 2026-10-12 (see "Completed gates").
 

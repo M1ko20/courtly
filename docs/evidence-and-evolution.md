@@ -583,3 +583,10 @@ method. They would need the DB clock moved too.
 
 The decision requested in the first draft of the status report ("add CI before
 CP2?") was taken: **yes, added** (Adam Vrána for the team, 2026-11-02).
+
+**Schedule correction (2026-11-02):** the CP1 defence (A + C) is on the
+exercise right after C07, not a week later. So R-01's treatment (each member's own clean run + dry run)
+cannot finish before the defence. It moves to **2026-11-16** (owner Marek
+Tyl) and stays **NOT VERIFIED, HIGH (6)** at the defence. The status
+report says so and stays AMBER. A step of part A that its speaker hasn't
+verified is presented by Adam Vrána. The other treatments and residuals above are unchanged.
