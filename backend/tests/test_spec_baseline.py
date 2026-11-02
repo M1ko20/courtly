@@ -537,12 +537,15 @@ def test_ve_03_1_confirm_keeps_the_slot_blocked_and_records_the_event(
         ReservationStatus.EXPIRED,
     ],
 )
+# Both court kinds: Confirm/Reject take a different path per court
+# kind, so a precondition must hold on each (C06 F1 sweep, risk R-05).
+@pytest.mark.parametrize("requires_approval", [False, True])
 def test_ve_03_2_confirm_from_any_other_state_is_a_conflict(
-    session_factory: sessionmaker, state: ReservationStatus
+    session_factory: sessionmaker, state: ReservationStatus, requires_approval: bool
 ) -> None:
     client = TestClient(app)
     user_id, token = make_user(session_factory, "u@example.com")
-    court_id = make_court(session_factory)
+    court_id = make_court(session_factory, requires_approval=requires_approval)
     reservation_id = add_reservation(
         session_factory, court_id, user_id, at(18), at(19), state
     )
@@ -553,12 +556,15 @@ def test_ve_03_2_confirm_from_any_other_state_is_a_conflict(
     assert status_of(session_factory, reservation_id) == state
 
 
+# Both court kinds: Confirm/Reject take a different path per court
+# kind, so a precondition must hold on each (C06 F1 sweep, risk R-05).
+@pytest.mark.parametrize("requires_approval", [False, True])
 def test_ve_03_3_expired_hold_cannot_be_confirmed_and_is_then_swept(
-    session_factory: sessionmaker,
+    session_factory: sessionmaker, requires_approval: bool
 ) -> None:
     client = TestClient(app)
     user_id, token = make_user(session_factory, "u@example.com")
-    court_id = make_court(session_factory)
+    court_id = make_court(session_factory, requires_approval=requires_approval)
     reservation_id = add_reservation(
         session_factory,
         court_id,
@@ -583,12 +589,15 @@ def test_ve_03_3_expired_hold_cannot_be_confirmed_and_is_then_swept(
     assert check(client, court_id, at(18), at(19)).json()["available"] is True
 
 
+# Both court kinds: Confirm/Reject take a different path per court
+# kind, so a precondition must hold on each (C06 F1 sweep, risk R-05).
+@pytest.mark.parametrize("requires_approval", [False, True])
 def test_ve_03_4_confirm_on_a_deactivated_court_is_a_conflict(
-    session_factory: sessionmaker,
+    session_factory: sessionmaker, requires_approval: bool
 ) -> None:
     client = TestClient(app)
     user_id, token = make_user(session_factory, "u@example.com")
-    court_id = make_court(session_factory)
+    court_id = make_court(session_factory, requires_approval=requires_approval)
     reservation_id = add_reservation(
         session_factory,
         court_id,

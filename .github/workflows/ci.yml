@@ -1,0 +1,53 @@
+# Runs the same checks as `finish-task` on every push and pull request:
+# the backend suite against a real PostgreSQL 16 (never mocked, ADR-001)
+# and the frontend build + lint. Added for risk R-02 (no CI) in
+# docs/evidence-and-evolution.md § "Risk Assessment".
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: reservations
+          POSTGRES_PASSWORD: reservations
+          POSTGRES_DB: reservations
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reservations"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      # Same command as README; conftest derives the reservations_test DB.
+      - run: uv run pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
