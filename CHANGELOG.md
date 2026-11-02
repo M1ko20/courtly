@@ -9,6 +9,20 @@ when the team cuts a release; each release has a git tag of the same name
 
 ## [Unreleased]
 
+## [4.1.2] - 2026-11-02
+
+Tests, CI and docs only: backend stays 0.4.1, frontend stays 4.1.0. This
+is the C07–C08 reporting baseline.
+
+### Added
+
+- **CI:** GitHub Actions runs the backend suite on PostgreSQL 16 and the frontend build and lint on every PR, push to `main` and release tag.
+
+### Changed
+
+- **Precondition tests on both court kinds:** the Confirm precondition tests (VE-03.2, 03.3, 03.4) and the Reject one (VE-06.3) now run on both court kinds.
+- **Docs:** the risk-treatment results are recorded in `docs/evidence-and-evolution.md`.
+
 ## [4.1.1] - 2026-11-02
 
 Backend-only patch: backend 0.4.0 -> 0.4.1, frontend stays 4.1.0. Closes

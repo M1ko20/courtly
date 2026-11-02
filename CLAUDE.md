@@ -143,8 +143,8 @@ docker-compose.yml                  single `db` service (Postgres 16) shared by 
 | Tests | pytest + httpx, against real Postgres | none exist yet (see frontend/CLAUDE.md) |
 | Lint | not configured (a stray `.ruff_cache` is the only trace of ruff) | `oxlint`, default rules |
 
-There is **no CI/CD** anywhere in this repo. That's the real current
-state, not an oversight for you to silently fix — see "Known gaps" below.
+CI is GitHub Actions (`.github/workflows/ci.yml`, added 2026-11-02 for risk
+R-02): backend suite on PostgreSQL 16 + frontend build/lint on every PR. No CD.
 Schema changes go through Alembic migrations (ADR-006, `backend/CLAUDE.md`). There is one narrow pre-commit hook (blocks commits
 on `main`, see "Git workflow" below) plus the existing ruff-format
 post-edit hook — neither is a substitute for CI.
@@ -194,7 +194,7 @@ Two distinct passes, both before calling non-trivial work done:
 
 - **`finish-task`** — the mechanical pass: picks the right test/build/lint
   commands for what you actually changed and confirms they pass. This repo
-  has no CI, so this is the closest thing to one.
+  is the local equivalent of what CI (`.github/workflows/ci.yml`) runs on the PR.
 - **`self-review`** — the qualitative pass: reads the diff for correctness,
   architecture fit, security, performance, tests, UX, docs, and unnecessary
   changes.
@@ -385,10 +385,9 @@ implementation. Details:
   to the built-in `/code-review` skill only per "Review depth matches
   risk" above, with an explicit level — not reflexively before every
   merge.
-- **Merge** with `gh pr merge` once checks/review are satisfied. This repo
-  has no CI, so "checks satisfied" means `finish-task`'s own verification
-  already passed on the branch — don't treat the absence of CI as license
-  to skip that. Never merge a change you know is broken.
+- **Merge** with `gh pr merge` once checks/review are satisfied. "Checks
+  satisfied" means the PR's CI run is green and `finish-task`'s own
+  verification passed on the branch. Never merge a change you know is broken.
 - **Cleanup** — delete the merged branch (`gh pr merge --delete-branch`, or
   `git branch -d`/`git push origin --delete` after merge) and sync local
   `main`.
@@ -412,7 +411,7 @@ tokens, passwords, or password hashes.
 
 ## Known gaps — flag, don't silently fix
 
-No CI, no generated frontend API types, no frontend test suite.
+No CD, no generated frontend API types, no frontend test suite.
 These are real, current, and known. If closing one of these would
 genuinely help the task you're doing, propose it and say why — don't
 silently add a new dependency, config file, or pipeline as a side effect of

@@ -531,3 +531,55 @@ Owner: team (Adam Vrána), resolved once CP2 is announced.
 | **Actual residual** | NOT VERIFIED | NOT VERIFIED (one run is not a control) | NOT VERIFIED (only F2's test is proven season-proof) | MEDIUM (3), accepted | NOT VERIFIED | LOW (2), accepted |
 | **Acceptance & contingency** | Adam Vrána accepts after the dry run. If a member can't run it, pair with them before the defence | Adam Vrána. If the defence-day run is red, report it as an open issue in the status report, not as Verified | Adam Vrána. A red date-dependent test is fixed like F2 (derive from local time), never skipped | Adam Vrána; contingency: DB constraint still guarantees BR-02 | Adam Vrána; a gap found is fixed or listed as an open issue | Adam Vrána; contingency: show the outbox row and the delivery state instead |
 | **Monitoring / trigger** | Trigger: a member can't run the suite or answer a walkthrough question | Trigger: any merge to `main` without a recorded suite run; the defence-day run is red | Trigger: a failing test whose diff is empty; a DST change date in the window (2027-03-28) | Trigger: a diff adds a `transition(` call site or changes `_get_owned_reservation` | Trigger: a VE test that runs on one court kind only, for an operation whose path depends on it | Trigger: push delivery state `FAILED` in the dry run |
+
+### Follow-up 2026-11-02 — risk treatments carried out (reporting baseline `v4.1.2`)
+
+Treatments that could be done without the other team members, run the same day.
+Initial ratings stay as recorded above. Only the residuals change, and only where there is evidence.
+
+**R-05: precondition sweep (OP-01…OP-06), done.** Each `docs/specification.md` "Preconditions" clause was mapped to where the code enforces it and to its VE test:
+
+| Operation | Clause → enforcement → test | Court-kind dependent? | Gap found |
+|---|---|---|---|
+| OP-01 Create | auth (`get_current_user`, VE-01.4); court exists/active (`_get_court_or_404`, VE-01.3); interval/shape (schema, VE-01.2/01.2b/01.5); window (`check_within_booking_window`, VE-01.6); hours (`check_within_opening_hours`, VE-01.11/01.12); facility block (`check_facility_available`, VE-02.5); limits (`check_active_reservation_limit`, VE-01.8/01.10) | no | none |
+| OP-02 Availability | court active, interval shape (VE-02.6, VE-02.8) | no | none |
+| OP-03 Confirm | `state = PENDING`, hold alive, court active (Lifecycle edge + `GUARDS`, VE-03.2/03.3/03.4); owner or manager (`_get_owned_reservation`, VE-03.5) | **yes**: a normal court goes `PENDING → CONFIRMED`, an approval court goes `PENDING → PENDING_APPROVAL` with its own guard row | VE-03.2/03.3/03.4 ran only on a normal court |
+| OP-04 Cancel | state set + `now < start` (`check_cancellable`, VE-04.3/04.4/04.5, DD-T5); owner or manager (VE-04.6) | no, the same check on both | none |
+| OP-05 Approve | `state = PENDING_APPROVAL` (F1 fix, VE-05.3 both kinds); deadline (VE-05.4); court active (VE-05.4b); venue manager (VE-05.2/05.9/05.10) | yes | closed by F1 |
+| OP-06 Reject | `state = PENDING_APPROVAL` (edge table, VE-06.3); deadline (VE-06.4); venue manager (VE-06.2/06.6) | yes, a different path on a normal court | VE-06.3 ran only on an approval court |
+
+Action: VE-03.2, VE-03.3, VE-03.4 and VE-06.3 are now parametrised over both court
+kinds. Result: **16 passed**. All four preconditions already held on the
+other court kind, so **no new defect**: only the evidence was incomplete.
+
+**R-02: CI added, done.** `.github/workflows/ci.yml` runs the backend suite
+against a PostgreSQL 16 service, plus the frontend `npm ci && npm run build && npm run lint`, on
+every PR, push to `main` and `v*` tag. First run, PR #96
+(GitHub Actions run 41367706826): **backend success, frontend success**. The
+runner's clock is in UTC, not Europe/Prague, so CI also checks the suite
+under a different local offset (pitfall #1).
+
+**R-03: full suite with a moved clock, partly done.** `uv run --with
+time-machine` with the clock at 2027-06-15 (CEST, test process only):
+**495 passed, 3 failed**: `test_admin_stats_window_days_changes_the_recent_count`,
+`test_reviews_written_metric`, `test_trending_courts_ranks_by_recent_bookings`.
+All three compare `created_at` with a "last N days" window. `created_at` is
+set by PostgreSQL (`server_default=func.now()`, the real 2026 clock), and
+the window comes from Python's `datetime.now()`, which was moved to 2027. So
+the failures come from the method: only one of the two clocks was moved.
+They are not seasonal defects. All three pass on the real clock (490 passed today) and in CI. Every
+booking-rule test (windows, opening hours, holds, deadlines) passed under the summer clock.
+Remaining gap: those three "recent window" tests can't be checked with this
+method. They would need the DB clock moved too.
+
+| Risk | Treatment status | Actual residual |
+|---|---|---|
+| R-01 People | not done. It needs each member's own clean run and dry run | **NOT VERIFIED** (still HIGH 6 until done) |
+| R-02 Release | CI added and green on its first run | **L=1, I=2 → LOW (2)**: one green run is evidence that the control works. Re-check on every red run |
+| R-03 Tech/time | suite under a summer clock: 495/498, the 3 others explained above | **L=1, I=2 → LOW (2)** for the booking rules; the 3 "recent window" tests NOT VERIFIED by this method |
+| R-04 Tech/locks | accepted | MEDIUM (3), unchanged |
+| R-05 Scope | sweep done, 4 tests widened, no new defect | **L=1, I=2 → LOW (2)** |
+| R-06 External | accepted | LOW (2), unchanged |
+
+The decision requested in the first draft of the status report ("add CI before
+CP2?") was taken: **yes, added** (Adam Vrána for the team, 2026-11-02).

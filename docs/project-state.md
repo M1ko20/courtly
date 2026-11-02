@@ -35,7 +35,7 @@ ours (`v4.1.0`). Both of HAH's verified findings are dispositioned and closed in
 | C03 | **DONE** (assignment: `docs/course/C03.md`). Part A + B–L in `docs/architecture-and-decisions.md` (§ "C03 Part A", § "C03 — Architecture", ADR-005); evidence (M) in `docs/evidence-and-evolution.md` § "C03 — Architecture Evidence". Commit/tag: implementation merged to `main` in PR #71 (`da3158d`), tag `c03-architecture`. Follow-up 2026-10-08 (PR #76): waitlist accept, the one path that bypassed the Lifecycle, now goes through it (amendment at the end of `docs/architecture-and-decisions.md`). No C03 item open |
 | C04 | **Does not exist**: C03 took its place in the course (stated by the team, 2026-10-12) |
 | C06 | **DONE** (assignment: `docs/course/C06.md`). Assessed by HAH on `v4.1.0`; owner disposition (F1, F2 accepted and fixed, F3 rejected candidate) in `docs/evidence-and-evolution.md` § "C06 Internal Evidence Assessment"; fixes in tag `v4.1.1` |
-| C07–C08 | **IN PROGRESS** (assignment: `docs/course/C07-C08.md`). Today's part (verified C06 decisions): done, same section. B Risk Assessment: `docs/evidence-and-evolution.md` § "Risk Assessment" (6 risks, 5 categories). A Technical Design Review and C Status Report (6-slide PPTX): prepared outside the repo, reporting baseline `v4.1.1`; open until presented |
+| C07–C08 | **IN PROGRESS** (assignment: `docs/course/C07-C08.md`). Today's part (verified C06 decisions): done, same section. B Risk Assessment: `docs/evidence-and-evolution.md` § "Risk Assessment" (6 risks, 5 categories). A Technical Design Review and C Status Report (6-slide PPTX): prepared outside the repo, reporting baseline `v4.1.2`; open until presented |
 | C05 | **DONE** (assignment: `docs/course/C05.md`). Detailed design of the Reservation Lifecycle (C03 R2) in `docs/architecture-and-decisions.md` § "C05 Detailed Design"; tests DD-T1…DD-T9 in `backend/tests/test_lifecycle.py`; evidence (tests, design ↔ code comparison, remaining risk) in `docs/evidence-and-evolution.md` § "C05 DD Verification Evidence". Tag `c05-detailed-design`. No C05 item open |
 
 ## Completed gates
@@ -95,8 +95,8 @@ v0.2") now holds formally, not just behaviourally.
 ## Pending / open gates — needs human action, not more code
 
 - **C07–C08 / CP1:** the defence itself (A + C) at the next exercise, and the
-  risk treatments that are still NOT VERIFIED (`docs/evidence-and-evolution.md`
-  § "Risk Assessment", R-01/R-02/R-03/R-05). They are open until a team member
+  risk treatment that is still NOT VERIFIED (`docs/evidence-and-evolution.md`
+  § "Risk Assessment", R-01: each member's clean run + dry run, due 2026-11-09). They are open until a team member
   does them. A session must not mark them done.
 - The specification-baseline approval gate was closed on 2026-10-12 (see "Completed gates").
 
@@ -133,6 +133,11 @@ where, so a session doesn't have to search for them.
   The +3 since 4.1.0 are VE-05.3 on a normal court (C06 F1). A count is
   true only for this tag and date: on 2026-10-25 team HAH got 486 passed and 1 failed on
   `v4.1.0`, because one test depended on the season (C06 F2, now fixed).
+- `v4.1.2` adds 8 cases (preconditions on both court kinds) and CI:
+  `.github/workflows/ci.yml` (backend on PostgreSQL 16, frontend build +
+  lint). First green run: PR #96. Under a moved clock (2027-06-15) the
+  suite is 495 passed, 3 failed by the method, see `docs/evidence-and-evolution.md`
+  "Follow-up 2026-11-02 — risk treatments".
   - The C02-baseline evidence figure stays **177 passed** (2026-09-21).
   - The suite later grew through product features (PRs #38–#44), the C03
     outbox (PR #71, 305) and the waitlist-lifecycle follow-up (PR #76, 309) and waitlist booking limits (311).
@@ -150,9 +155,9 @@ section just points to it.
 
 ## Latest relevant commit
 
-Release **v4.1.1** (2026-11-02): frontend 4.1.0 (unchanged), backend 0.4.1, tag
-`v4.1.1`, one baseline of docs, code and tests (see `CHANGELOG.md`). It is
-the C07–C08 reporting baseline. The C06 assessed baseline was `v4.1.0` (`4a23dc1`).
+Release **v4.1.2** (2026-11-02): frontend 4.1.0, backend 0.4.1, tag
+`v4.1.2`, one baseline of docs, code, tests and CI (see `CHANGELOG.md`). It is
+the C07–C08 reporting baseline. `v4.1.1` holds the C06 fixes. The C06 assessed baseline was `v4.1.0` (`4a23dc1`).
 Course milestones:
 - C02 engineering: PR [#9](https://github.com/tylmarek1/C01/pull/9) (`ede421d`).
 - C03 architecture: PR [#71](https://github.com/tylmarek1/C01/pull/71)
