@@ -331,15 +331,18 @@ def test_ve_05_2_the_owner_cannot_approve_their_own_request(
         ReservationStatus.REJECTED,
     ],
 )
+# Both court kinds: on a normal court the PENDING -> CONFIRMED guards would
+# pass, so only the OP-05 precondition (state = PENDING_APPROVAL) refuses it.
+@pytest.mark.parametrize("requires_approval", [True, False])
 def test_ve_05_3_approve_from_any_other_state_is_a_conflict(
-    session_factory: sessionmaker, state: ReservationStatus
+    session_factory: sessionmaker, state: ReservationStatus, requires_approval: bool
 ) -> None:
     client = TestClient(app)
     user_id, _ = make_user(session_factory, "player@example.com")
     _, manager = make_user(
         session_factory, "manager@example.com", UserRole.VENUE_MANAGER
     )
-    court_id = make_court(session_factory, requires_approval=True)
+    court_id = make_court(session_factory, requires_approval=requires_approval)
     reservation_id = add_reservation(
         session_factory,
         court_id,

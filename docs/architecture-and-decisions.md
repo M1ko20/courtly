@@ -1243,3 +1243,23 @@ slot that ended without a check-in becomes `NO_SHOW`, and only `CHECKED_IN`
 completes. No code path used the edge. The row and the code were corrected,
 and DD-T1 now takes its expected edges from the specification instead of
 from the code (`docs/evidence-and-evolution.md`, C05 follow-up 2026-10-19).
+
+#### Amendment (2026-11-02): a manager decision applies only to a request
+
+C06 finding F1 (team HAH, `docs/evidence-and-evolution.md` § "C06 Internal
+Evidence Assessment") showed a gap. `approval_decision=True` was checked only
+by `_manager_decision` on the edges out of `PENDING_APPROVAL`. So Approve on
+a normal court's live `PENDING` hold passed the `PENDING → CONFIRMED` guards
+and confirmed it. OP-05 forbids this (precondition "state = PENDING_APPROVAL",
+VE-05.3), and C03 G3 gives that edge to Confirm alone.
+
+The contract of `check_transition` gets one more step, between the edge check
+and the guards. A decision on a reservation that is not `PENDING_APPROVAL`
+is refused with `Rejection.NOT_AWAITING_APPROVAL` (409, "This reservation is
+not awaiting approval"), before any guard and before any write. It is not a
+BR-09 guard row, because BR-09's guard column is unchanged. It is the
+OP-05/OP-06 precondition, held by the Lifecycle so that no requester can
+bypass it. Order is now: edge (`ILLEGAL_TRANSITION`) → decision only on a request
+(`NOT_AWAITING_APPROVAL`) → `GUARDS`. Reject from `PENDING` still stops
+at the edge check, because `PENDING → REJECTED` is not in BR-09. Tests: DD-T4 (unit
+case), VE-05.3 on both court kinds.

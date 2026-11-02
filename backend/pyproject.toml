@@ -1,6 +1,6 @@
 [project]
 name = "reservations"
-version = "0.4.0"
+version = "0.4.1"
 description = "Sports court reservation system (SWI project)"
 readme = "README.md"
 authors = [

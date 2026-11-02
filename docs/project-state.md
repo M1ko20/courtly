@@ -15,14 +15,17 @@ update this file, the next session will start from a wrong premise.
 
 ## Current phase
 
-**C01–C05: all DONE, no gate open.** **C01: DONE.** **C02: DONE**: the team
+**C01–C06: all DONE. C07–C08: in progress** (assignment `docs/course/C07-C08.md`;
+CP1 defence at the next exercise). **C01: DONE.** **C02: DONE**: the team
 approved specification baselines v0.1, v0.2 and v0.3 on 2026-10-12, which
 was the last open gate. **C03: DONE**: Part A
 (AS-IS trace) and B–M (drivers → ADR-005 → TO-BE views → outbox implementation
 → verification) for Confirm Reservation, evidence in `docs/evidence-and-evolution.md`.
 **C04: does not exist.** C03 took its place in the course, so there is no
 C04 assignment and nothing to track. **C05: DONE**: detailed design of the
-Reservation Lifecycle.
+Reservation Lifecycle. **C06: DONE**: we assessed another team's project
+(team member Marek Tyl, GitLab MR `danielkodrla/swi!6`, 2026-10-19), and team HAH assessed
+ours (`v4.1.0`). Both of HAH's verified findings are dispositioned and closed in `v4.1.1`.
 
 | | |
 |---|---|
@@ -31,6 +34,8 @@ Reservation Lifecycle.
 | Specification baseline | v0.3 — `docs/specification.md` (2026-10-08: venue-scoped managers, ADR-008), approved by the team on 2026-10-12. The C02 baselines are frozen: v0.1 in `docs/specification-v0.1.md`, v0.2 in `docs/specification-v0.2.md` |
 | C03 | **DONE** (assignment: `docs/course/C03.md`). Part A + B–L in `docs/architecture-and-decisions.md` (§ "C03 Part A", § "C03 — Architecture", ADR-005); evidence (M) in `docs/evidence-and-evolution.md` § "C03 — Architecture Evidence". Commit/tag: implementation merged to `main` in PR #71 (`da3158d`), tag `c03-architecture`. Follow-up 2026-10-08 (PR #76): waitlist accept, the one path that bypassed the Lifecycle, now goes through it (amendment at the end of `docs/architecture-and-decisions.md`). No C03 item open |
 | C04 | **Does not exist**: C03 took its place in the course (stated by the team, 2026-10-12) |
+| C06 | **DONE** (assignment: `docs/course/C06.md`). Assessed by HAH on `v4.1.0`; owner disposition (F1, F2 accepted and fixed, F3 rejected candidate) in `docs/evidence-and-evolution.md` § "C06 Internal Evidence Assessment"; fixes in tag `v4.1.1` |
+| C07–C08 | **IN PROGRESS** (assignment: `docs/course/C07-C08.md`). Today's part (verified C06 decisions): done, same section. B Risk Assessment: `docs/evidence-and-evolution.md` § "Risk Assessment" (6 risks, 5 categories). A Technical Design Review and C Status Report (6-slide PPTX): prepared outside the repo, reporting baseline `v4.1.1`; open until presented |
 | C05 | **DONE** (assignment: `docs/course/C05.md`). Detailed design of the Reservation Lifecycle (C03 R2) in `docs/architecture-and-decisions.md` § "C05 Detailed Design"; tests DD-T1…DD-T9 in `backend/tests/test_lifecycle.py`; evidence (tests, design ↔ code comparison, remaining risk) in `docs/evidence-and-evolution.md` § "C05 DD Verification Evidence". Tag `c05-detailed-design`. No C05 item open |
 
 ## Completed gates
@@ -89,8 +94,11 @@ v0.2") now holds formally, not just behaviourally.
 
 ## Pending / open gates — needs human action, not more code
 
-None. The last one, team approval of the specification baselines, was
-closed on 2026-10-12 (see "Completed gates").
+- **C07–C08 / CP1:** the defence itself (A + C) at the next exercise, and the
+  risk treatments that are still NOT VERIFIED (`docs/evidence-and-evolution.md`
+  § "Risk Assessment", R-01/R-02/R-03/R-05). They are open until a team member
+  does them. A session must not mark them done.
+- The specification-baseline approval gate was closed on 2026-10-12 (see "Completed gates").
 
 ## Architectural drivers carried into C03
 
@@ -119,10 +127,12 @@ where, so a session doesn't have to search for them.
 
 ## Latest verification
 
-- `cd backend && uv run pytest -v` — **487 passed** against real
-  PostgreSQL 16 (its own `reservations_test` database since PR #77). Last
-  run: 2026-10-19, on a fresh clone of release 4.1.0's code, following only
-  the root `README.md` (106 of these are `backend/tests/test_lifecycle.py`).
+- `cd backend && uv run pytest -q` — **490 passed** against real
+  PostgreSQL 16 (its own `reservations_test` database). Last run:
+  2026-11-02, on release 4.1.1's code (the C07–C08 reporting baseline).
+  The +3 since 4.1.0 are VE-05.3 on a normal court (C06 F1). A count is
+  true only for this tag and date: on 2026-10-25 team HAH got 486 passed and 1 failed on
+  `v4.1.0`, because one test depended on the season (C06 F2, now fixed).
   - The C02-baseline evidence figure stays **177 passed** (2026-09-21).
   - The suite later grew through product features (PRs #38–#44), the C03
     outbox (PR #71, 305) and the waitlist-lifecycle follow-up (PR #76, 309) and waitlist booking limits (311).
@@ -140,8 +150,9 @@ section just points to it.
 
 ## Latest relevant commit
 
-Release **v4.1.0** (2026-10-19): frontend 4.1.0, backend 0.4.0, tag
-`v4.1.0` — one baseline of docs, code and tests (see `CHANGELOG.md`).
+Release **v4.1.1** (2026-11-02): frontend 4.1.0 (unchanged), backend 0.4.1, tag
+`v4.1.1`, one baseline of docs, code and tests (see `CHANGELOG.md`). It is
+the C07–C08 reporting baseline. The C06 assessed baseline was `v4.1.0` (`4a23dc1`).
 Course milestones:
 - C02 engineering: PR [#9](https://github.com/tylmarek1/C01/pull/9) (`ede421d`).
 - C03 architecture: PR [#71](https://github.com/tylmarek1/C01/pull/71)
