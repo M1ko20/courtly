@@ -214,12 +214,17 @@ def test_dd_t3_a_deadline_is_alive_at_its_own_instant_and_dead_one_tick_later(
     instant, so a reservation is never both actionable and expirable."""
     status = S.PENDING if field == "hold" else S.PENDING_APPROVAL
     reservation = unsaved(status, **{field: NOW})
+    # Confirm takes no decision; Reject does (NOT_AWAITING_APPROVAL otherwise).
+    decision = field == "approval"
 
-    assert rejection(reservation, alive_target, decision=True, now=NOW) is None
+    assert rejection(reservation, alive_target, decision=decision, now=NOW) is None
     assert rejection(reservation, lapsed_target, now=NOW) == alive_reason
 
     later = NOW + TICK
-    assert rejection(reservation, alive_target, decision=True, now=later) == dead_reason
+    assert (
+        rejection(reservation, alive_target, decision=decision, now=later)
+        == dead_reason
+    )
     assert rejection(reservation, lapsed_target, now=later) is None
 
 
@@ -246,6 +251,15 @@ def test_dd_t4_only_a_live_manager_decision_ends_an_approval_request() -> None:
         == Rejection.COURT_INACTIVE
     )
     assert rejection(inactive_court, S.REJECTED, decision=True) is None
+    # OP-05/OP-06 precondition: a decision applies only to a request. On a
+    # normal court a live PENDING hold passes every PENDING -> CONFIRMED
+    # guard, so this is the only thing stopping Approve from confirming it.
+    live_hold = unsaved(S.PENDING, hold=NOW + timedelta(minutes=5))
+    assert rejection(live_hold, S.CONFIRMED) is None
+    assert (
+        rejection(live_hold, S.CONFIRMED, decision=True)
+        == Rejection.NOT_AWAITING_APPROVAL
+    )
     # Grandfathering (BR-11): the flag is off on all three courts here, and
     # the request is still decidable — no approval-flag guard on these edges.
 

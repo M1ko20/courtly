@@ -307,7 +307,7 @@ Tests: `backend/tests/test_lifecycle.py`. Each test name starts with its DD id.
 | **DD-T1** interface contract: edge check before guards; `ALLOWED_TRANSITIONS` = BR-09 | For all 9 × 9 `(from, to)` pairs, an edge outside BR-09 is `ILLEGAL_TRANSITION` whatever the guards say, and an edge inside it never is. Absorbing states have no edges. Every `GUARDS` row is an allowed edge. | unit | `test_dd_t1_the_edge_table_is_checked_before_any_guard` (81 cases), `test_dd_t1_absorbing_states_and_the_guard_table_agree_with_br_09` |
 | **DD-T2** algorithm branch: decision table for leaving a `PENDING` hold | All 8 combinations of hold lapsed × court active × requires approval give the tabled reason, with guard order hold → court → flag. From a live hold on an active court exactly one target is reachable. | unit | `test_dd_t2_confirm_decision_table` (8 cases) |
 | **DD-T3** algorithm branch: `lapsed(d, now) = d < now` (BR-06, BR-12) | At `now = deadline` the hold/request is alive (act: yes, expire: `*_NOT_EXPIRED`). One microsecond later it is dead (act: `*_EXPIRED`, expire: yes). | unit | `test_dd_t3_a_deadline_is_alive_at_its_own_instant_and_dead_one_tick_later` (hold, approval) |
-| **DD-T4** state transition guards out of `PENDING_APPROVAL` (BR-11, BR-12) | No decision → `DECISION_REQUIRED`, checked first. An expired request cannot be approved. An inactive court cannot be approved onto, but a request on it can still be rejected. | unit | `test_dd_t4_only_a_live_manager_decision_ends_an_approval_request` |
+| **DD-T4** state transition guards out of `PENDING_APPROVAL` (BR-11, BR-12) | No decision → `DECISION_REQUIRED`, checked first. An expired request cannot be approved. An inactive court cannot be approved onto, but a request on it can still be rejected. *(Added 2026-11-02, C06 F1:)* a decision on a live `PENDING` hold → `NOT_AWAITING_APPROVAL`. | unit | `test_dd_t4_only_a_live_manager_decision_ends_an_approval_request` |
 | **DD-T5** failure behaviour: `check_cancellable` (BR-03) | For every state: `PENDING`/`PENDING_APPROVAL`/`CONFIRMED` pass 1 µs before start and fail `ALREADY_STARTED` at start. Every other state fails `NOT_CANCELLABLE`. | unit | `test_dd_t5_cancel_policy_by_state_and_time` (9 cases) |
 | **DD-T6** failure contract: `TransitionRejected` | It is an `HTTPException` with 409, it carries `reason`, and its `detail` is the wording the API already returned. | unit | `test_dd_t6_a_rejection_is_a_409_with_a_reason_and_the_api_wording` |
 | **DD-T7** command postconditions, all-or-nothing | A refused `transition()` changes nothing and adds no event. A successful one sets the status, clears the right deadline and adds exactly one event of the mapped type with actor and note. | component (real session, PostgreSQL) | `test_dd_t7_transition_postconditions_and_all_or_nothing` |
@@ -396,3 +396,138 @@ Implementation, tests and design: commit `5b2411e` (branch `feat/c05-detailed-de
 - **Mutation check:** with the old `lifecycle.py` restored, the new DD-T1
   fails (2 failed: the `CONFIRMED → COMPLETED` pair and the table equality); the
   old DD-T1 had passed on that code. With the fix: 82 passed (`-k t1`).
+
+## C06 Internal Evidence Assessment
+
+**Assignment:** `docs/course/C06.md` (owner part, § 11) and `docs/course/C07-C08.md`
+(part "Dnes: C06 assessment findings → ověřené rozhodnutí").
+**Assessed by:** team HAH, assessment dated 2026-10-25. **Disposition:** 2026-11-02, owner Adam Vrána for the team.
+
+**Assessed baseline:** tag `v4.1.0` = `4a23dc1` (main, clean tree). Every
+finding below was reproduced against that baseline before anything was changed.
+**Fix / reporting baseline:** tag `v4.1.1` (this change, PR "fix: close the
+two C06 findings"). Links old → new are per finding.
+
+HAH's checklist: B1–B2, R1–R5, A1–A4, D1–D3, D5 = YES; Q1–Q3 = N/A (no C04
+assignment, accepted by HAH as N/A); **D4 = PARTLY** (cause: F1). Three
+candidates: F1 and F2 verified, F3 rejected by HAH itself.
+
+### Verified findings
+
+**F1 — Approve confirms a mere `PENDING` hold on a normal court**
+
+- **Claim:** OP-05 (Approve) acts only on a `PENDING_APPROVAL` request.
+  `docs/specification.md` OP-05 precondition "state = PENDING_APPROVAL",
+  REQ-08, VE-05.3 ("approve a PENDING hold … → CONFLICT, state unchanged").
+- **Expected:** `POST /reservations/{id}/approve` on a `PENDING` hold → 409, state unchanged, no event, no notification.
+- **Observed (HAH):** on a court without `requires_approval` → 200,
+  `CONFIRMED`, a `CONFIRMED` event noted "Approved", a "Reservation approved"
+  notification. On an approval court `_no_approval_needed` refused it by accident.
+- **Verify (ours, on `v4.1.0`):** `test_ve_05_3_approve_from_any_other_state_is_a_conflict`
+  parametrised over both court kinds, run with `v4.1.0`'s
+  `backend/src/reservations/lifecycle.py`: **1 failed, 5 passed**. The failing
+  case is `[False-PENDING]` (normal court, `PENDING`), exactly HAH's case.
+  Root cause: `approve_reservation()` passes `approval_decision=True`. The Lifecycle
+  checked that flag only on the edges out of `PENDING_APPROVAL`. The `PENDING → CONFIRMED`
+  guards (hold alive, court active, no approval needed) all pass on a normal court.
+- **Which source was wrong:** the code. The specification (OP-05, VE-05.3) and C03 G3 ("`PENDING → CONFIRMED`
+  is requested only by Confirm on a normal court") were right and stay unchanged.
+  The VE-05.3 test was too narrow: it used only an approval court, so it
+  could not see the gap. HAH's D4 PARTLY says the same about the DD tests.
+- **Disposition:** VERIFIED FINDING → **ACCEPTED — change required.**
+- **Action:** `check_transition()` now refuses a manager decision on any reservation that is not
+  `PENDING_APPROVAL`: `Rejection.NOT_AWAITING_APPROVAL`, 409, before any guard
+  and before any write. It lives in the Lifecycle, not only in the route,
+  because the Lifecycle owns "may this transition happen" (C03 R2). So no
+  future caller that passes `approval_decision=True` can repeat this. DD amendment:
+  `docs/architecture-and-decisions.md` § "C05 Detailed Design", *Amendment (2026-11-02)*.
+- **Closure evidence:** VE-05.3 now runs on both court kinds (6 cases, all
+  passing). DD-T4 has a unit case: a live hold → `CONFIRMED` passes without a decision and is
+  `NOT_AWAITING_APPROVAL` with one. DD-T3 no longer passes a decision to
+  Confirm, which the new rule correctly refused. Full suite: see "Verification run" below.
+
+**F2 — the venue-local-time regression test was seasonal**
+
+- **Claim:** BR-04 is checked in Europe/Prague (Known pitfall #1). Evidence claimed: "487 passed" (`docs/project-state.md`, 2026-10-19).
+- **Expected:** the regression test checks the rule in any season, and the claimed evidence can be reproduced on the baseline.
+- **Observed (HAH, 2026-10-25):** 486 passed, 1 failed:
+  `test_create_reservation_uses_venue_local_time_not_utc` sends a fixed
+  `05:00Z` and assumes it is 07:00 local (CEST). After the clocks change on
+  2026-10-25, today + 3 days is in CET, `05:00Z` is 06:00 local, and the
+  app correctly returns 422.
+- **Verify (ours, on `v4.1.0`):** the `v4.1.0` test run on 2026-11-02 →
+  `assert 422 == 201`. The same test with the clock moved to 2027-06-15
+  (`uv run --with time-machine`, test process only) → passes. So the
+  product follows BR-04 and the oracle depends on the season.
+- **Which source was wrong:** the test, which was the verification evidence. The product and the spec were right.
+- **Disposition:** VERIFIED FINDING → **ACCEPTED — change required.**
+- **Action:** the test now builds the UTC instants from local 07:00 and 06:00
+  Europe/Prague on the day under test. It asserts that 07:00 local, the
+  opening, is 201 and 06:00 local is 422. The boundary is now checked from both sides.
+  Before, only the accepted side was checked.
+- **Closure evidence:** the new test passes with the clock at 2026-11-02
+  (CET), 2027-03-26 (the day before CEST starts, so the booked day is in CEST)
+  and 2027-06-15 (CEST). Each was run with `time-machine` travel, 1 passed each.
+
+### Rejected candidate
+
+**F3** — an approval request without a deadline. Rejected by HAH itself:
+`approval_service.submit_for_approval()` is the only caller of
+`transition(…, PENDING_APPROVAL)`, and it sets `approval_expires_at` in the
+same transaction. **Owner disposition: ACCEPTED — no immediate change.** We agree with
+the rejection. The risk applies to future code only and is already listed in § "C05 DD
+Verification Evidence" → "Remaining design risk".
+
+### Owner disposition
+
+| Finding | Disposition | Reason / evidence | Action / no-change | Owner | Status |
+|---|---|---|---|---|---|
+| F1 | ACCEPTED — change required | reproduced on `v4.1.0`: VE-05.3 `[False-PENDING]` 200 ≠ 409 | Lifecycle refuses a decision outside `PENDING_APPROVAL`; VE-05.3 on both court kinds; DD-T4 case; DD amendment | Adam Vrána | closed in `v4.1.1` |
+| F2 | ACCEPTED — change required | reproduced on `v4.1.0`: `422 == 201` in CET, passes in CEST | test derives UTC from local time and checks both sides of the opening | Adam Vrána | closed in `v4.1.1` |
+| F3 | ACCEPTED — no immediate change (rejected candidate) | single caller sets the deadline (HAH's own check) | none. The risk stays recorded under C05 "Remaining design risk" | — | no change |
+
+### Actions / justified no-change decisions
+
+- F1, F2: fixed (above). The spec, C03 architecture and C05 DD intent are unchanged. The DD
+  gets one amendment that records the new refusal reason.
+- `docs/project-state.md` "Latest verification" no longer gives a test count
+  without a date and tag. A count is true only for the commit and the day it
+  was run, which is what F2 showed.
+
+### Remaining evidence gaps
+
+- The suite still depends on the real clock (`datetime.now()` plus a few
+  days). F2's test is now season-proof. The other tests were not run with
+  a moved clock in this change, so they are **NOT VERIFIED** beyond the
+  dates they actually ran on. Tracked as R-03 in § "Risk Assessment" below.
+- The Lifecycle's lock precondition (callers hold `FOR UPDATE`) is still a
+  documented contract, not a mechanical check. DD-T9 checks only one race. Tracked as R-04.
+
+### Verification run
+
+`cd backend && uv run pytest -q` on the fix, 2026-11-02, PostgreSQL 16: **490 passed** (4.1.0 had 487; +3 = VE-05.3 on a normal court).
+
+## Risk Assessment
+
+**Assignment:** `docs/course/C07-C08.md` part B. **Date:** 2026-11-02. **Reporting baseline:** `v4.1.1`.
+Classification per B3/B4: L × I, 1–2 LOW, 3–4 MEDIUM, 6–9 HIGH. An actual
+residual is given only where the treatment has been carried out and its
+effect checked. Otherwise it is NOT VERIFIED.
+
+The two C06 findings are **issues/defects, not risks** (they had already happened). Both are closed in `v4.1.1`, see above.
+Open issue: **planning gap**, there is no committed CP2 date or scope in
+`docs/course/` yet, so slide 03 of the status report has no CP2 plan date.
+Owner: team (Adam Vrána), resolved once CP2 is announced.
+
+| | R-01 | R-02 | R-03 | R-04 | R-05 | R-06 |
+|---|---|---|---|---|---|---|
+| **Category** | People / Resources | Release / Operation | Technical / Quality | Technical / Quality | Scope / Requirements | External dependency |
+| **Cause → event → consequence** | Most of the code and docs come from one member (`git shortlog -sn`: 126 of 146 commits by one author) → in the CP1 defence another member can't explain or run a part → the "Engineering Review & Defence" score drops; if that member is away, nobody can change the system | No CI. The 8-minute suite runs only when someone remembers → a regression or a date-dependent failure sits on the tag that is reported as verified → a "Verified" claim is false at the defence (it already happened once: F2) | Tests build dates from the real clock (today + N days, DST, the 14-day booking window) → another test turns red on some future date with no code change → false red, or a red the team learns to ignore | `transition()` needs the caller to hold the row lock, but nothing checks it → a new call site without `FOR UPDATE` lets two transitions on one reservation both succeed → state/audit inconsistency. BR-02 double booking stays impossible, because the DB constraint enforces it | Operation preconditions (OP-0x "Preconditions") are partly enforced by guards that only happen to cover them (F1 was one) → another spec ↔ code gap is found at CP1/CP2 → rework, a lower "Working Solution & Evidence" score | Web Push needs browser push services and VAPID keys → push does not arrive during the demo (network, permission, browser) → the H1 notification step looks broken |
+| **Initial L / I → priority** | L=2 (the commit share is a fact; the defence is in a week), I=3 (graded defence of the whole team) → **HIGH (6)** | L=2 (happened once already), I=3 (CP1 "Working Solution & Evidence") → **HIGH (6)** | L=2 (one such test was found), I=2 (fixable, but it costs a release) → **MEDIUM (4)** | L=1 (every current call site locks; it would take new code), I=3 (state invariant) → **MEDIUM (3)** | L=2 (F1 shows the pattern exists), I=2 → **MEDIUM (4)** | L=2, I=1 (the in-app inbox, R7, shows the same notification with no push) → **LOW (2)** |
+| **Strategy** | MITIGATE | MITIGATE (+ decision on CI) | MITIGATE | ACCEPT (with monitoring) | MITIGATE | ACCEPT (with contingency) |
+| **Treatment & owner / due** | Every member does a clean checkout + `uv run pytest` per README on their own machine, and presents one of the A steps (A1–A5) at a dry run. Owners: Marek Tyl, Josef Glogar, Adam Mikoláš; due 2026-11-09 | Full suite on the reporting tag on defence day, output saved. The team decides whether to add a GitHub Actions job (Postgres service + pytest) before CP2. Owner: Adam Vrána; due 2026-11-09 | F2 fixed and checked in 3 seasons (done). Run the whole suite once with the clock moved (summer, the eve of a DST change). Owner: Adam Vrána; due 2026-11-09 | Review rule: every new `transition(` call site in a diff must show its lock. DD-T9 keeps the race test. Acceptance owner: Adam Vrána | Go through OP-01…OP-06 preconditions against code + VE tests, on both court kinds wherever the court kind changes the path. Owner: Marek Tyl; due 2026-11-09 | Demo uses the in-app notification inbox; push is shown only if it works on the demo machine. Acceptance owner: Adam Vrána |
+| **Treatment evidence** | none yet | `v4.1.1` suite run 2026-11-02 (`docs/project-state.md`); the CI decision is open | F2 closure above (3 × 1 passed); the full-suite clock run not done yet | `lifecycle.py` docstring (contract), DD-T9 | F1 closure (OP-05 done); OP-01…04, OP-06 not yet swept | in-app inbox: `notifications.py`, existing tests |
+| **Expected residual** | L=1, I=2 → LOW (2) | L=1, I=2 → LOW (2) with CI; L=1, I=3 → MEDIUM (3) without | L=1, I=2 → LOW (2) | L=1, I=3 → MEDIUM (3) (unchanged, accepted) | L=1, I=2 → LOW (2) | L=2, I=1 → LOW (2) |
+| **Actual residual** | NOT VERIFIED | NOT VERIFIED (one run is not a control) | NOT VERIFIED (only F2's test is proven season-proof) | MEDIUM (3), accepted | NOT VERIFIED | LOW (2), accepted |
+| **Acceptance & contingency** | Adam Vrána accepts after the dry run. If a member can't run it, pair with them before the defence | Adam Vrána. If the defence-day run is red, report it as an open issue in the status report, not as Verified | Adam Vrána. A red date-dependent test is fixed like F2 (derive from local time), never skipped | Adam Vrána; contingency: DB constraint still guarantees BR-02 | Adam Vrána; a gap found is fixed or listed as an open issue | Adam Vrána; contingency: show the outbox row and the delivery state instead |
+| **Monitoring / trigger** | Trigger: a member can't run the suite or answer a walkthrough question | Trigger: any merge to `main` without a recorded suite run; the defence-day run is red | Trigger: a failing test whose diff is empty; a DST change date in the window (2027-03-28) | Trigger: a diff adds a `transition(` call site or changes `_get_owned_reservation` | Trigger: a VE test that runs on one court kind only, for an operation whose path depends on it | Trigger: push delivery state `FAILED` in the dry run |

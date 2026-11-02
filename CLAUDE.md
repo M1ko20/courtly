@@ -96,6 +96,7 @@ table is how a short prompt actually finds one.
 |---|---|
 | "dokonči C02" / "finish C02" / picking up course work | `docs/project-state.md` first (which phase, which gates are open), then whichever of `c01.md` / `c02-baseline.md` / `c02-change.md` that phase points to |
 | "implementuj change z C02" / a new requirement change | `.claude/workflows/c02-change.md` |
+| "C07/C08", "status report", "risk assessment", "obhajoba CP1" | `docs/course/C07-C08.md`, then `docs/project-state.md` (reporting baseline) and `docs/evidence-and-evolution.md` § "C06 Internal Evidence Assessment" / § "Risk Assessment" — update those in place, don't start a new document |
 | "připrav mě na C03" | `docs/course/C03.md` if it exists yet (load it the same way as C01/C02); if it doesn't, say so explicitly and work from `docs/project-state.md`'s architectural-drivers list instead of guessing at C03's scope |
 | "přidej X" / "add X" / "improve reservations" | `.claude/workflows/feature.md` |
 | "oprav X" / "fix X" | `.claude/workflows/bug-fix.md` |
@@ -119,7 +120,7 @@ docs/project-state.md               current phase, gates, drivers — layer 3
 docs/definition-of-done.md          the evidence-backed-completion rule (not a checklist)
 docs/intent-and-change.md           Project Frame (domain, states, rules) — graded, still accurate as decisions
 docs/architecture-and-decisions.md  ADR-000..010 (stack, exclusion constraint, repo split, JWT, WebSocket chat, Web Push outbox, Alembic, logging/audit, venues, opening hours/rates, payments); C03 Part A AS-IS trace + C03 architecture (Confirm Reservation); C05 detailed design (Reservation Lifecycle)
-docs/evidence-and-evolution.md      the executed C01 spike write-up + the C02, C03 and C05 evidence
+docs/evidence-and-evolution.md      the executed C01 spike write-up + the C02, C03, C05 evidence, the C06 owner disposition and the C07–C08 risk register
 docs/specification.md               current specification v0.3 (approval process + venue-scoped managers); v0.1 and v0.2 (the C02 baselines) frozen in specification-v0.1.md / -v0.2.md
 docs/change-c02-impact.md           impact analysis of the C02 change + architectural drivers handed to C03
 .claude/workflows/                  the process files "How work gets routed" (above) points into

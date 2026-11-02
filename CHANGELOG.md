@@ -9,6 +9,29 @@ when the team cuts a release; each release has a git tag of the same name
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-11-02
+
+Backend-only patch: backend 0.4.0 -> 0.4.1, frontend stays 4.1.0. Closes
+the two verified findings of the C06 assessment of `v4.1.0`.
+
+### Fixed
+
+- **Approve on an ordinary hold:** a venue manager's Approve on a `PENDING`
+  hold of a court without approval no longer confirms it as "approved". It
+  returns 409 "This reservation is not awaiting approval", as OP-05/VE-05.3
+  specify. The Lifecycle refuses a manager decision on anything that is not
+  `PENDING_APPROVAL` (`Rejection.NOT_AWAITING_APPROVAL`).
+- **Season-dependent test:** the venue-local-time regression test for
+  opening hours assumed summer time and failed after the clocks changed.
+  It now derives the UTC instants from Europe/Prague local time and checks
+  both 06:00 (rejected) and 07:00 (accepted).
+
+### Documentation
+
+- Course assignments C06 and C07–C08 added under `docs/course/`. The C06 owner
+  disposition and the C07–C08 risk register are in `docs/evidence-and-evolution.md`,
+  and the DD has an amendment for the new refusal reason.
+
 ## [4.1.0] - 2026-10-19
 
 Backend 0.3.2 -> 0.4.0, frontend 4.0.0 -> 4.1.0. Everything merged since

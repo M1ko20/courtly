@@ -98,23 +98,36 @@ def test_create_reservation_rejects_outside_opening_hours(
 def test_create_reservation_uses_venue_local_time_not_utc(
     session_factory: sessionmaker,
 ) -> None:
-    """07:00 Europe/Prague (summer, UTC+2) is 05:00 UTC — must be accepted, not rejected as pre-opening."""
+    """BR-04 is checked in Europe/Prague: opening (07:00 local) sent as its
+    UTC instant must be accepted, one slot earlier must not. The UTC times are
+    derived from local time for the day under test, so the oracle holds in
+    both CET and CEST (a fixed 05:00Z broke when the date crossed into CET)."""
     client = TestClient(app)
     court_id = seed_court(session_factory)
     token = register_and_login(client, "kate@example.com")
     day = future_date()
+    utc = ZoneInfo("UTC")
 
-    response = client.post(
-        "/reservations",
-        json={
+    def utc_slot(hour: int) -> dict[str, str]:
+        start = datetime(day.year, day.month, day.day, hour, tzinfo=PRAGUE)
+        return {
             "court_id": court_id,
-            "start_time": f"{day.isoformat()}T05:00:00Z",
-            "end_time": f"{day.isoformat()}T06:00:00Z",
-        },
-        headers={"Authorization": f"Bearer {token}"},
-    )
+            "start_time": start.astimezone(utc).isoformat().replace("+00:00", "Z"),
+            "end_time": (start + timedelta(hours=1))
+            .astimezone(utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
+        }
 
-    assert response.status_code == 201
+    headers = {"Authorization": f"Bearer {token}"}
+    assert (
+        client.post("/reservations", json=utc_slot(6), headers=headers).status_code
+        == 422
+    )
+    assert (
+        client.post("/reservations", json=utc_slot(7), headers=headers).status_code
+        == 201
+    )
 
 
 def test_create_reservation_requires_auth(session_factory: sessionmaker) -> None:

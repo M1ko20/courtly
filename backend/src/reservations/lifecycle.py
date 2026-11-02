@@ -87,6 +87,7 @@ class Rejection(enum.StrEnum):
     APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
     APPROVAL_NOT_REQUIRED = "APPROVAL_NOT_REQUIRED"
     DECISION_REQUIRED = "DECISION_REQUIRED"
+    NOT_AWAITING_APPROVAL = "NOT_AWAITING_APPROVAL"
     APPROVAL_EXPIRED = "APPROVAL_EXPIRED"
     APPROVAL_NOT_EXPIRED = "APPROVAL_NOT_EXPIRED"
     NOT_CANCELLABLE = "NOT_CANCELLABLE"
@@ -100,6 +101,7 @@ _MESSAGES: dict[Rejection, str] = {
     Rejection.APPROVAL_REQUIRED: "This court requires a venue manager's approval",
     Rejection.APPROVAL_NOT_REQUIRED: "This court does not require approval",
     Rejection.DECISION_REQUIRED: "Only a venue manager's decision can do that",
+    Rejection.NOT_AWAITING_APPROVAL: "This reservation is not awaiting approval",
     Rejection.APPROVAL_EXPIRED: "This approval request has expired",
     Rejection.APPROVAL_NOT_EXPIRED: "This approval request has not expired yet",
     Rejection.ALREADY_STARTED: (
@@ -214,6 +216,11 @@ def check_transition(
             Rejection.ILLEGAL_TRANSITION,
             f"Cannot move a {old_status} reservation to {new_status}",
         )
+    # OP-05/OP-06 precondition: a manager's decision is taken only on a
+    # PENDING_APPROVAL request. Without this, Approve on a normal court's
+    # PENDING hold would pass the PENDING -> CONFIRMED guards (VE-05.3).
+    if approval_decision and old_status != ReservationStatus.PENDING_APPROVAL:
+        raise TransitionRejected(Rejection.NOT_AWAITING_APPROVAL)
     for guard in GUARDS.get((old_status, new_status), ()):
         reason = guard(reservation, now, approval_decision)
         if reason is not None:
