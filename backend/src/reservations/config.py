@@ -17,9 +17,21 @@ DEFAULT_VAPID_PUBLIC_KEY = "BIBfr7saQ_QdBF9zqTj6Q0si2h91lTokpAtaPzf8phZXQ1_SXkBu
 DEFAULT_VAPID_PRIVATE_KEY = "I8WX6J2BxWWkXk-ItfLFUQADSJJIUJdmEvxrCu7Pguc"
 
 
+def _normalize_database_url(url: str) -> str:
+    """Hosting providers (Render, Heroku, ...) hand out plain postgres:// or
+    postgresql:// URLs; SQLAlchemy would then pick psycopg2, which isn't
+    installed — point it at psycopg (v3) instead."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
 class Settings:
     def __init__(self) -> None:
-        self.database_url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+        self.database_url = _normalize_database_url(
+            os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+        )
         self.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET_KEY)
         self.access_token_expire_minutes = int(
             os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
