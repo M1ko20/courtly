@@ -11,9 +11,12 @@ import { ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation, type TranslationKey } from "@/lib/i18n"
 
-/** Mirrors the accounts `backend/src/reservations/seed.py` creates. Dev builds
- * only — a production bundle must not advertise working credentials. */
-const DEMO_ACCOUNTS: { email: string; password: string; role: TranslationKey; hint: TranslationKey }[] = import.meta.env.DEV
+/** Mirrors the accounts `backend/src/reservations/seed.py` creates. Shown in
+ * dev builds, and in production only when VITE_SHOW_DEMO_ACCOUNTS=true (a
+ * public demo deployment) — otherwise a production bundle must not advertise
+ * working credentials. */
+const DEMO_ACCOUNTS: { email: string; password: string; role: TranslationKey; hint: TranslationKey }[] =
+  import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === "true"
   ? [
       { email: "player@courtly.app", password: "playerplayer", role: "role.PLAYER", hint: "auth.demo.hint.player" },
       { email: "teammate@courtly.app", password: "teammate1", role: "role.PLAYER", hint: "auth.demo.hint.teammate" },
